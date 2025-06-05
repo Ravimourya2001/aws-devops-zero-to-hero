@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 
-$containerId = `sudo docker ps | awk -F "" '{print $1}'`
-
-docker rm -f $containerId
+CONTAINER_ID=$(sudo docker ps -q)
+sudo docker rm -f $CONTAINER_ID
 
 # Stop the running container (if any)
 echo "Hi"
