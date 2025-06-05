@@ -1,23 +1,40 @@
-# Base image
-FROM python:3.8
+# -------- Stage 1: Build --------
+FROM python:3.8-alpine as builder
 
-# Set the working directory inside the container
+# Install build dependencies
+RUN apk add --no-cache \
+    build-base \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev
+
+# Set working directory
 WORKDIR /app
 
-# Copy the requirements file
+# Copy only the requirements to leverage Docker layer caching
 COPY requirements.txt .
 
-# Install the project dependencies
-RUN pip install -r requirements.txt
+# Install Python dependencies to a temporary folder
+RUN pip install --prefix=/install --no-cache-dir -r requirements.txt
 
-# Copy the application code into the container
+# -------- Stage 2: Runtime --------
+FROM python:3.8-alpine
+
+# Install only runtime dependencies
+RUN apk add --no-cache libffi openssl
+
+# Set working directory
+WORKDIR /app
+
+# Copy installed packages from builder stage
+COPY --from=builder /install /usr/local
+
+# Copy application code
 COPY . .
 
-# Expose the port the Flask application will be listening on
+# Expose the port Flask will run on
 EXPOSE 5000
 
-# Set environment variables, if necessary
-# ENV MY_ENV_VAR=value
-
-# Run the Flask application
+# Command to run your app
 CMD ["python", "app.py"]
